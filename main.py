@@ -42,11 +42,15 @@ def setMotorContorl(pwm, INA, INB, speed, stat):
     elif stat == BACKWORD:
         GPIO.output(INA, LOW)
         GPIO.output(INB, HIGH)
-        
+    
     elif stat == STOP:
         GPIO.output(INA, LOW)
         GPIO.output(INB, LOW)
 
+GPIO.setmode(GPIO.BCM)
+pwmA = setPinConfig(ENA, IN1, IN2)
+pwmB = setPinConfig(ENB, IN3, IN4)
+ 
 def setMotor(ch, speed, stat):
     if ch == CH1:
         #pwmA는 핀 설정 후 pwm 핸들을 리턴 받은 값이다.
@@ -55,16 +59,12 @@ def setMotor(ch, speed, stat):
         #pwmB는 핀 설정 후 pwm 핸들을 리턴 받은 값이다.
         setMotorContorl(pwmB, IN3, IN4, speed, stat)
 
+
 def main():
     camera = cv2.VideoCapture(0) #카메라를 비디오 입력으로 사용. -1은 기본설정이라는 뜻
     camera.set(3,320) #띄울 동영상의 가로사이즈 160픽셀
     camera.set(4,240) #띄울 동영상의 세로사이즈 120픽셀
-
-    GPIO.setmode(GPIO.BCM)
-
-    pwmA = setPinConfig(ENA, IN1, IN2)
-    pwmB = setPinConfig(ENB, IN3, IN4)
-    
+   
     while( camera.isOpened() ): #카메라가 Open되어 있다면,
         ret, frame = camera.read() #비디오의 한 프레임씩 읽습니다. ret값이 True, 실패하면 False, fram에 읽은 프레임이 나옴
         cv2.imshow( 'normal' , frame)  #'normal'이라는 이름으로 영상을 출력
