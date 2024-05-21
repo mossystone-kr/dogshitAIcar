@@ -1,10 +1,69 @@
 import cv2 #OpenCV를 사용하기위해 import해줍니다.
 import numpy as np #파이썬의 기본 모듈중 하나인 numpy
+import RPi.GPIO as GPIO
+from time import sleep
+
+STOP = 0
+FORWARD = 1
+BACKWORD = 2
+
+CH1 = 0
+CH2 = 1
+
+OUTPUT = 1
+INPUT = 0
+
+HIGH = 1
+LOW = 0
+
+ENA = 26
+ENB = 0
+IN1 = 19
+IN2 = 13
+IN3 = 6
+IN4 = 5
+
+def setPinConfig(EN, INA, INB):        
+    GPIO.setup(EN, GPIO.OUT)
+    GPIO.setup(INA, GPIO.OUT)
+    GPIO.setup(INB, GPIO.OUT)
+    pwm = GPIO.PWM(EN, 100)  
+    pwm.start(0) 
+    return pwm
+
+def setMotorContorl(pwm, INA, INB, speed, stat):
+
+    pwm.ChangeDutyCycle(speed)  
+    
+    if stat == FORWARD:
+        GPIO.output(INA, HIGH)
+        GPIO.output(INB, LOW)
+        
+    elif stat == BACKWORD:
+        GPIO.output(INA, LOW)
+        GPIO.output(INB, HIGH)
+        
+    elif stat == STOP:
+        GPIO.output(INA, LOW)
+        GPIO.output(INB, LOW)
+
+def setMotor(ch, speed, stat):
+    if ch == CH1:
+        #pwmA는 핀 설정 후 pwm 핸들을 리턴 받은 값이다.
+        setMotorContorl(pwmA, IN1, IN2, speed, stat)
+    else:
+        #pwmB는 핀 설정 후 pwm 핸들을 리턴 받은 값이다.
+        setMotorContorl(pwmB, IN3, IN4, speed, stat)
 
 def main():
     camera = cv2.VideoCapture(0) #카메라를 비디오 입력으로 사용. -1은 기본설정이라는 뜻
     camera.set(3,320) #띄울 동영상의 가로사이즈 160픽셀
     camera.set(4,240) #띄울 동영상의 세로사이즈 120픽셀
+
+    GPIO.setmode(GPIO.BCM)
+
+    pwmA = setPinConfig(ENA, IN1, IN2)
+    pwmB = setPinConfig(ENB, IN3, IN4)
     
     while( camera.isOpened() ): #카메라가 Open되어 있다면,
         ret, frame = camera.read() #비디오의 한 프레임씩 읽습니다. ret값이 True, 실패하면 False, fram에 읽은 프레임이 나옴
@@ -60,12 +119,12 @@ def main():
             #print(cx,end=" ") #출력값을 print 한다.
             
         if len(contours2) > 0:
-            c = max(contours2, key=cv2.contourArea)
-            M = cv2.moments(c)
+            c2 = max(contours2, key=cv2.contourArea)
+            M2 = cv2.moments(c2)
              
             #X축과 Y축의 무게중심을 구한다.
-            cx2 = int(M['m10']/M['m00'])
-            cy2 = int(M['m01']/M['m00'])
+            cx2 = int(M2['m10']/M2['m00'])
+            cy2 = int(M2['m01']/M2['m00'])
             
            #X축의 무게중심을 출력한다.
             cv2.line(crop_img_2,(cx2,0),(cx2,720),(255,0,0),1)
@@ -77,14 +136,20 @@ def main():
 
         if cx>=30 and cx<=60:
             if cx2>=110 and cx2<=150:
-                print("우회전")
+                #print("우회전")
+                setMotor(CH1, 40, FORWARD)
+                setMotor(CH2, 10, FORWARD)
 
         if cx>=0 and cx<=30:
             if cx2>=20 and cx2<=80:
-                print("좌회전") 
+                #print("좌회전")
+                setMotor(CH1, 10, FORWARD)
+                setMotor(CH2, 40, FORWARD)
 
         else:
-            print("직진")
+            #print("직진")
+            setMotor(CH1, 40, FORWARD)
+            setMotor(CH2, 40, FORWARD)
         
         if cv2.waitKey(1) == ord('q'): #만약 q라는 키보드값을 읽으면 종료합니다.
             break
